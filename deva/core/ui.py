@@ -1,50 +1,126 @@
-"""Componentes visuais compartilhados pelas páginas."""
+"""Componentes visuais compartilhados com Design System alinhado ao Taste-Skill e UI/UX Pro Max."""
 import plotly.express as px
 import streamlit as st
 
 from deva.core import config, dados, navegacao
 
-AZUL = "#1F4E9C"
+# Paleta Deva Industrial Tech (Alto Contraste WCAG AA)
+AZUL = "#1A4B8C"
+AZUL_HOVER = "#123563"
+
 CORES_CATEGORIA = {
-    "Fiel": "#1F7A4D", "Recorrente": "#4FA36F", "Novo": "#2F6FD0",
-    "Ocasional": "#9AA5B1", "Em risco": "#E08A1E", "Perdido": "#C2412D",
+    "Fiel": "#0D6832",
+    "Recorrente": "#15803D",
+    "Novo": "#0284C7",
+    "Ocasional": "#64748B",
+    "Em risco": "#B45309",
+    "Perdido": "#B91C1C",
 }
-CORES_GIRO = {"Alto": "#1F7A4D", "Médio": "#4FA36F", "Baixo": "#E08A1E", "Sem venda 12m": "#C2412D"}
+
+CORES_GIRO = {
+    "Alto": "#0D6832",
+    "Médio": "#15803D",
+    "Baixo": "#B45309",
+    "Sem venda 12m": "#B91C1C",
+}
+
 CORES_SEGMENTO = {
-    "Cliente": AZUL, "Mercado Livre": "#F2B705", "Garantia": "#7A869A",
-    "Interno": "#B4BCC8", "Seguradora": "#8E5BB5",
+    "Cliente": AZUL,
+    "Mercado Livre": "#D97706",
+    "Garantia": "#475569",
+    "Interno": "#94A3B8",
+    "Seguradora": "#7C3AED",
 }
+
+
+def badge_categoria_html(cat: str) -> str:
+    """Retorna badge HTML estilizado para categorias."""
+    classes = {
+        "Fiel": "deva-badge deva-badge-fiel",
+        "Recorrente": "deva-badge deva-badge-recorrente",
+        "Novo": "deva-badge deva-badge-novo",
+        "Ocasional": "deva-badge deva-badge-ocasional",
+        "Em risco": "deva-badge deva-badge-risco",
+        "Perdido": "deva-badge deva-badge-perdido",
+    }
+    cls = classes.get(cat, "deva-badge deva-badge-ocasional")
+    return f'<span class="{cls}">{cat}</span>'
 
 
 def filtro_canal(chave: str, padrao: str = "Todos") -> str:
     opcoes = ["Todos", "Balcão", "Oficina"]
-    return st.segmented_control("Canal", opcoes, default=padrao, key=chave) or padrao
+    return st.segmented_control("Canal de Venda", opcoes, default=padrao, key=chave) or padrao
 
 
 def kpis(itens: list[tuple[str, str, str | None]]) -> None:
+    """Grid de métricas KPI com hierarquia visual e tipografia tabular."""
     cols = st.columns(len(itens))
     for col, (rotulo, valor, ajuda) in zip(cols, itens):
         col.metric(rotulo, valor, help=ajuda)
 
 
-def grafico(fig, altura: int = 360):
+def grafico(fig, altura: int = 340):
+    """Aplica o tema visual profissional Deva nos gráficos Plotly."""
     fig.update_layout(
-        height=altura, margin=dict(l=10, r=10, t=50, b=10),
-        legend=dict(orientation="h", yanchor="top", y=-0.12, x=0, title=None),
-        separators=",.", hovermode="x unified" if fig.layout.xaxis.type == "date" else "closest",
+        height=altura,
+        font=dict(family="Inter, -apple-system, sans-serif", size=12, color="#334155"),
+        title=dict(
+            font=dict(family="Inter, -apple-system, sans-serif", size=14, color="#0F172A", weight=600),
+            x=0.01,
+            xanchor="left",
+            y=0.96,
+        ),
+        margin=dict(l=16, r=16, t=46, b=24),
+        plot_bgcolor="#FFFFFF",
+        paper_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=-0.22,
+            x=0,
+            title=None,
+            font=dict(size=11, color="#475569"),
+        ),
+        separators=",.",
+        hovermode="x unified" if fig.layout.xaxis.type == "date" else "closest",
+        hoverlabel=dict(
+            bgcolor="#FFFFFF",
+            bordercolor="#CBD5E1",
+            font=dict(family="Inter, -apple-system, sans-serif", size=12, color="#0F172A"),
+        ),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    # Suaviza eixos e gridlines
+    fig.update_xaxes(
+        showline=True,
+        linecolor="#E2E8F0",
+        gridcolor="#F8FAFC",
+        tickfont=dict(size=11, color="#64748B"),
+        title=None,
+    )
+    fig.update_yaxes(
+        showline=False,
+        gridcolor="#F1F5F9",
+        tickfont=dict(size=11, color="#64748B"),
+        title=None,
+    )
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
 def barras_mensais(df, x, y, cor=None, mapa_cores=None, titulo=None):
-    fig = px.bar(df, x=x, y=y, color=cor, color_discrete_map=mapa_cores, title=titulo)
-    fig.update_yaxes(tickprefix="R$ ", title=None)
-    fig.update_xaxes(title=None)
+    fig = px.bar(
+        df,
+        x=x,
+        y=y,
+        color=cor,
+        color_discrete_map=mapa_cores,
+        title=titulo,
+    )
+    fig.update_yaxes(tickprefix="R$ ")
     return fig
 
 
 def dinheiro(rotulo: str):
-    """Separador de milhar no padrão do navegador (pt-BR: 1.234,56)."""
+    """Separador de milhar no padrão brasileiro (R$ 1.234,56)."""
     return st.column_config.NumberColumn(f"{rotulo} (R$)", format="localized")
 
 
@@ -53,7 +129,7 @@ def inteiro(rotulo: str):
 
 
 def percentual(rotulo: str):
-    """Use com valores já multiplicados por 100."""
+    """Valores percentuais com uma casa decimal."""
     return st.column_config.NumberColumn(rotulo, format="%.1f%%")
 
 
@@ -73,13 +149,19 @@ def seletor_cliente(chave: str, segmento: str = "Cliente"):
     pendente = navegacao.cliente_pendente()
     if pendente in rotulos:
         st.session_state[chave] = pendente
-    cod = st.selectbox("Cliente", list(rotulos), format_func=rotulos.get, key=chave, index=None,
-                       placeholder="Digite o nome ou o código do cliente")
+    cod = st.selectbox(
+        "Selecione ou busque o cliente",
+        list(rotulos),
+        format_func=rotulos.get,
+        key=chave,
+        index=None,
+        placeholder="Digite o nome, código ou categoria do cliente...",
+    )
     return cod, cli
 
 
 def tabela(df, **kwargs):
-    """st.dataframe com decimais arredondados (o formato 'localized' não fixa casas)."""
+    """st.dataframe com decimais arredondados e preenchimento de largura total."""
     numericas = df.select_dtypes("float").columns
     kwargs.setdefault("hide_index", True)
     kwargs.setdefault("use_container_width", True)
@@ -87,5 +169,5 @@ def tabela(df, **kwargs):
 
 
 def md(texto: str) -> None:
-    """st.markdown sem interpretar "R$ ... $" como fórmula LaTeX."""
+    """st.markdown com escape para evitar conflito com LaTeX em valores monetários."""
     st.markdown(texto.replace("$", r"\$"))
