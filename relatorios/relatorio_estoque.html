@@ -1,0 +1,345 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Raio-X do Estoque Deva</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: relatório de leitura em coluna única (~72ch), seções numeradas pela ordem do pedido, tabelas e barras com escala única por gráfico */
+:root{
+  --bg:#f7f8f9; --surface:#ffffff; --ink:#14181d; --ink-2:#4a525c; --ink-3:#6d7580; --rule:#dde1e6;
+  --accent:#1d5fae; --bar:#2a78d6; --bar-soft:#d6e4f5;
+  --good:#1f7a4d; --warn:#b26b00; --serious:#c2541d; --crit:#b42828;
+  --good-bg:#e4f3ea; --warn-bg:#fbf0dc; --serious-bg:#fbe7dc; --crit-bg:#f9e1e1;
+  --f-display:"Archivo","Segoe UI",Arial,sans-serif; --f-body:"Source Sans 3","Segoe UI",Arial,sans-serif; --f-data:"JetBrains Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121417; --surface:#1a1d21; --ink:#eef0f2; --ink-2:#b9c0c8; --ink-3:#8e97a1; --rule:#2c3138;
+  --accent:#6aa5ec; --bar:#3987e5; --bar-soft:#22344a;
+  --good:#5cc08b; --warn:#e3a33a; --serious:#ec8a5a; --crit:#ef7070;
+  --good-bg:#16301f; --warn-bg:#33270f; --serious-bg:#36200f; --crit-bg:#3a1717; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121417; --surface:#1a1d21; --ink:#eef0f2; --ink-2:#b9c0c8; --ink-3:#8e97a1; --rule:#2c3138;
+  --accent:#6aa5ec; --bar:#3987e5; --bar-soft:#22344a;
+  --good:#5cc08b; --warn:#e3a33a; --serious:#ec8a5a; --crit:#ef7070;
+  --good-bg:#16301f; --warn-bg:#33270f; --serious-bg:#36200f; --crit-bg:#3a1717; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:980px;margin:0 auto;display:grid;gap:44px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,40px);font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;display:flex;gap:12px;align-items:baseline}
+h2 .n{font:600 13px var(--f-data);color:var(--accent);letter-spacing:.06em}
+h3{font-size:17px;font-weight:700;margin-top:6px}
+p{margin:0;max-width:72ch;color:var(--ink-2)} p strong{color:var(--ink)}
+section{display:grid;gap:16px}
+.eyebrow{font:600 12px var(--f-data);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+header{display:grid;gap:10px;border-bottom:1px solid var(--rule);padding-bottom:24px}
+.meta{font-size:14px;color:var(--ink-3)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.tile .v{font:700 26px var(--f-display);font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--ink-3);line-height:1.35}
+.tile.alert .v{color:var(--crit)}
+.box{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:18px;display:grid;gap:14px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(110px,190px) 1fr 76px;gap:10px;align-items:center;font-size:14px}
+.bar .lab{color:var(--ink-2);min-width:0;overflow-wrap:anywhere}
+.bar .track{height:14px;background:var(--bar-soft);border-radius:0 4px 4px 0;position:relative}
+.bar .fill{height:100%;background:var(--bar);border-radius:0 4px 4px 0}
+.bar .val{font:600 13px var(--f-data);text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+.bar:hover .fill{filter:brightness(1.1)}
+.cap{font-size:13px;color:var(--ink-3)}
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 12px var(--f-data);letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);background:var(--bg);white-space:nowrap}
+td.n,th.n{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--f-body);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.c-crit{color:var(--crit);background:var(--crit-bg)} .c-ser{color:var(--serious);background:var(--serious-bg)}
+.c-warn{color:var(--warn);background:var(--warn-bg)} .c-good{color:var(--good);background:var(--good-bg)}
+ol.ins{margin:0;padding:0;list-style:none;display:grid;gap:12px;counter-reset:i}
+ol.ins li{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px 16px 14px 52px;position:relative;counter-increment:i;color:var(--ink-2)}
+ol.ins li::before{content:counter(i);position:absolute;left:16px;top:13px;font:700 15px var(--f-data);color:var(--accent)}
+ol.ins li strong{color:var(--ink)}
+ul{margin:0;padding-left:20px;color:var(--ink-2);display:grid;gap:6px;max-width:76ch}
+.q{border-left:3px solid var(--accent);padding:2px 0 2px 14px;color:var(--ink-2)}
+code{font-family:var(--f-data);font-size:.9em}
+@media (max-width:520px){.bar{grid-template-columns:96px 1fr 64px;font-size:13px}}
+</style>
+
+</head><body><main>
+<header>
+  <div class="eyebrow">Deva Veículos · Peças e acessórios · 6 filiais</div>
+  <h1>Raio-X do Estoque Deva</h1>
+  <p>Estoque geral (posição atual do ERP) cruzado com as vendas de jan/2024 a 14/out/2026. Valores <strong>a custo médio</strong>, salvo quando indicado. Cada linha do estoque é um código numa filial (uma "posição").</p>
+  <div class="meta">Análise de 20/10/2026 · base de estoque ESTOQUE_GERAL.xlsx · base de vendas VendasPeças.parquet</div>
+</header>
+
+<section>
+  <h2><span class="n">00</span>Resumo</h2>
+  <div class="tiles">
+    <div class="tile"><span class="v">R$ 26,4 mi</span><span class="l">em estoque a custo · R$ 56,0 mi a preço público</span></div>
+    <div class="tile"><span class="v">10.513</span><span class="l">códigos em 18.261 posições (código × filial)</span></div>
+    <div class="tile"><span class="v">6,5 meses</span><span class="l">de cobertura: estoque ÷ custo médio vendido por mês em 2026</span></div>
+    <div class="tile alert"><span class="v">R$ 9,1 mi</span><span class="l">34% do estoque está morto, parado, fora do lugar ou em excesso</span></div>
+    <div class="tile alert"><span class="v">R$ 6,0 mi</span><span class="l">faturados em 2026 com 1.692 códigos que hoje estão zerados em toda a rede</span></div>
+    <div class="tile alert"><span class="v">−10,5%</span><span class="l">faturamento jan–set 2026 contra jan–set 2025</span></div>
+  </div>
+  <p>O estoque está concentrado: <strong>224 códigos valem metade do estoque</strong> e 1.124 valem 80%. A outra ponta é longa: milhares de códigos de pouco valor cada um, muitos sem venda. As classes do ERP acertam o topo (A e B giram de fato), mas <strong>C4 e C? juntas são 62% do valor</strong> e misturam itens bons com itens mortos.</p>
+</section>
+
+<section>
+  <h2><span class="n">01</span>O que temos</h2>
+  <div class="grid2">
+    <div class="box">
+      <h3>Estoque por filial e giro</h3>
+      <div class="bars" role="img" aria-label="Estoque a custo por filial">
+        <div class="bar" title="Betim: R$ 12,77 mi · giro 2,2×/ano · 5,4 meses"><span class="lab">Betim</span><span class="track"><span class="fill" style="width:100%;display:block"></span></span><span class="val">12,77 mi</span></div>
+        <div class="bar" title="Pouso Alegre: R$ 3,83 mi · giro 1,9×/ano · 6,4 meses"><span class="lab">Pouso Alegre</span><span class="track"><span class="fill" style="width:30%;display:block"></span></span><span class="val">3,83 mi</span></div>
+        <div class="bar" title="BH: R$ 3,28 mi · giro 1,15×/ano · 10,4 meses"><span class="lab">BH</span><span class="track"><span class="fill" style="width:25.7%;display:block"></span></span><span class="val">3,28 mi</span></div>
+        <div class="bar" title="Montes Claros: R$ 2,91 mi · giro 1,6×/ano · 7,7 meses"><span class="lab">Montes Claros</span><span class="track"><span class="fill" style="width:22.8%;display:block"></span></span><span class="val">2,91 mi</span></div>
+        <div class="bar" title="Juiz de Fora: R$ 2,66 mi · giro 1,4×/ano · 8,6 meses"><span class="lab">Juiz de Fora</span><span class="track"><span class="fill" style="width:20.8%;display:block"></span></span><span class="val">2,66 mi</span></div>
+        <div class="bar" title="Divinópolis: R$ 0,95 mi · giro 1,2×/ano · 9,8 meses"><span class="lab">Divinópolis</span><span class="track"><span class="fill" style="width:7.4%;display:block"></span></span><span class="val">0,95 mi</span></div>
+      </div>
+      <div class="tw"><table>
+        <thead><tr><th>Filial</th><th class="n">Giro/ano</th><th class="n">Meses de estoque</th></tr></thead>
+        <tbody>
+          <tr><td>Betim</td><td class="n">2,20</td><td class="n">5,4</td></tr>
+          <tr><td>Pouso Alegre</td><td class="n">1,88</td><td class="n">6,4</td></tr>
+          <tr><td>Montes Claros</td><td class="n">1,56</td><td class="n">7,7</td></tr>
+          <tr><td>Juiz de Fora</td><td class="n">1,39</td><td class="n">8,6</td></tr>
+          <tr><td>Divinópolis</td><td class="n">1,23</td><td class="n">9,8</td></tr>
+          <tr><td><strong>BH</strong></td><td class="n"><strong>1,15</strong></td><td class="n"><strong>10,4</strong></td></tr>
+        </tbody></table></div>
+      <p class="cap">Giro = custo vendido em 2026 (anualizado) ÷ estoque a custo. BH tem quase o dobro da cobertura de Betim.</p>
+    </div>
+    <div class="box">
+      <h3>Estoque por classe ABC do ERP</h3>
+      <div class="bars" role="img" aria-label="Estoque a custo por classe ABC">
+        <div class="bar"><span class="lab">A1 · A2 · A3</span><span class="track"><span class="fill" style="width:55.4%;display:block"></span></span><span class="val">5,59 mi</span></div>
+        <div class="bar"><span class="lab">B1 · B2 · B3</span><span class="track"><span class="fill" style="width:42.6%;display:block"></span></span><span class="val">4,30 mi</span></div>
+        <div class="bar"><span class="lab">C1</span><span class="track"><span class="fill" style="width:0.3%;display:block"></span></span><span class="val">0,01 mi</span></div>
+        <div class="bar"><span class="lab">C4</span><span class="track"><span class="fill" style="width:63.5%;display:block"></span></span><span class="val">6,41 mi</span></div>
+        <div class="bar"><span class="lab">C? (sem classe)</span><span class="track"><span class="fill" style="width:100%;display:block"></span></span><span class="val">10,09 mi</span></div>
+      </div>
+      <p class="cap">C4 tem 10.285 posições; 7.358 delas nunca tiveram venda registrada no ERP. Na prática, C4 funciona como "sem venda".</p>
+      <h3>Tempo no estoque (como o ERP mede)</h3>
+      <div class="bars" role="img" aria-label="Estoque por tempo">
+        <div class="bar"><span class="lab">Até 12 meses</span><span class="track"><span class="fill" style="width:100%;display:block"></span></span><span class="val">22,67 mi</span></div>
+        <div class="bar"><span class="lab">13 a 24 meses</span><span class="track"><span class="fill" style="width:9%;display:block"></span></span><span class="val">2,05 mi</span></div>
+        <div class="bar"><span class="lab">25 a 36 meses</span><span class="track"><span class="fill" style="width:3.2%;display:block"></span></span><span class="val">0,72 mi</span></div>
+        <div class="bar"><span class="lab">Acima de 36</span><span class="track"><span class="fill" style="width:3.4%;display:block"></span></span><span class="val">0,76 mi</span></div>
+        <div class="bar"><span class="lab">Sem data</span><span class="track"><span class="fill" style="width:0.9%;display:block"></span></span><span class="val">0,20 mi</span></div>
+      </div>
+      <p class="cap">Atenção: o "Tempo" do ERP conta a partir da <strong>última entrada</strong>, não da primeira. Um item que recebeu 1 peça este ano aparece como "até 12 meses", mesmo que o resto esteja parado há anos.</p>
+    </div>
+  </div>
+  <h3>As 10 maiores posições</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Filial</th><th>Item</th><th>Ref.</th><th class="n">Qtde</th><th class="n">Custo</th><th>Classe</th><th>Última venda</th></tr></thead>
+    <tbody>
+      <tr><td>Betim</td><td>Bomba alta pressão</td><td><code>504342423</code></td><td class="n">60</td><td class="n">353.601</td><td>A1</td><td>22/09/2026</td></tr>
+      <tr><td>Betim</td><td>Injetor comb. eletr.</td><td><code>5801540211</code></td><td class="n">163</td><td class="n">314.985</td><td>A1</td><td>22/09/2026</td></tr>
+      <tr><td>Betim</td><td>Válvula freio do motor</td><td><code>5802535393</code></td><td class="n">22</td><td class="n">196.852</td><td>B1</td><td>15/06/2026</td></tr>
+      <tr><td>Montes Claros</td><td>Motor básico L.BLK</td><td><code>5802423495L</code></td><td class="n">2</td><td class="n">131.103</td><td>C4</td><td>28/05/2026</td></tr>
+      <tr><td>Betim</td><td>Conjunto de embreagem</td><td><code>5801385606</code></td><td class="n">19</td><td class="n">129.560</td><td>A1</td><td>23/09/2026</td></tr>
+      <tr><td>Betim</td><td>Actioil A550 100 ml</td><td><code>OFIVC55001</code></td><td class="n">6.370</td><td class="n">128.339</td><td>A3</td><td>01/09/2026</td></tr>
+      <tr><td>Betim</td><td>Urania LD9 semissintético</td><td><code>OF1030167009</code></td><td class="n">3.706</td><td class="n">118.533</td><td>A3</td><td>25/09/2026</td></tr>
+      <tr><td>Pouso Alegre</td><td>Injetor comb. eletr.</td><td><code>5801906153</code></td><td class="n">24</td><td class="n">105.460</td><td>C?</td><td>09/12/2025</td></tr>
+      <tr><td>Betim</td><td>Bloco motor montado</td><td><code>5802423083S</code></td><td class="n">1</td><td class="n">104.148</td><td>C?</td><td>16/12/2025</td></tr>
+      <tr><td>Pouso Alegre</td><td>Válvula freio do motor</td><td><code>5802535393</code></td><td class="n">10</td><td class="n">95.039</td><td>C?</td><td>19/05/2026</td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>O que não temos</h2>
+  <p>O arquivo de estoque só traz posições com saldo. Um código que vendeu em 2026 e não aparece no arquivo está <strong>zerado em todas as filiais</strong>.</p>
+  <div class="tiles">
+    <div class="tile"><span class="v">1.692</span><span class="l">códigos vendidos em 2026 sem nenhuma peça hoje (de 5.383 vendidos)</span></div>
+    <div class="tile"><span class="v">R$ 5,97 mi</span><span class="l">faturados com eles em 2026 (11% do faturamento do ano)</span></div>
+    <div class="tile"><span class="v">56</span><span class="l">são recorrentes (venderam em 6+ dos últimos 12 meses): R$ 0,68 mi em 2026</span></div>
+    <div class="tile"><span class="v">59</span><span class="l">itens com estoque abaixo de 1 mês de venda (risco de ruptura)</span></div>
+  </div>
+  <div class="grid2">
+    <div class="box">
+      <h3>Zerados que mais vendem</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Item</th><th class="n">Notas 2026</th><th class="n">Clientes</th><th class="n">Fat. 2026</th></tr></thead>
+        <tbody>
+          <tr><td>Tunap limpador sistema diesel <code>OF984</code></td><td class="n">271</td><td class="n">183</td><td class="n">60.022</td></tr>
+          <tr><td>Tunap limpador injetores <code>OF989</code></td><td class="n">126</td><td class="n">90</td><td class="n">29.409</td></tr>
+          <tr><td>Disco de freio traseiro <code>OF503120811</code></td><td class="n">119</td><td class="n">96</td><td class="n">76.276</td></tr>
+          <tr><td>Kit revisão <code>500092209</code></td><td class="n">116</td><td class="n">73</td><td class="n">8.593</td></tr>
+          <tr><td>Kit filtro da cabine Tector <code>OF13798</code></td><td class="n">50</td><td class="n">42</td><td class="n">10.632</td></tr>
+          <tr><td>Urania LD9 20 L <code>OF1030167010</code></td><td class="n">39</td><td class="n">29</td><td class="n">46.834</td></tr>
+          <tr><td>Elemento filtrante <code>5803401281</code></td><td class="n">39</td><td class="n">27</td><td class="n">15.817</td></tr>
+          <tr><td>Para-choque tripartido <code>5803195776</code></td><td class="n">11</td><td class="n">11</td><td class="n">84.675</td></tr>
+        </tbody></table></div>
+      <p class="cap">Parte da lista são acessórios instalados em veículos novos em um único dia (ex.: 26 notas em 23/07/2026, de chicotes, fusíveis e tapetes). Esses não precisam de estoque permanente.</p>
+    </div>
+    <div class="box">
+      <h3>Giro alto com menos de 1 mês de estoque</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Item</th><th class="n">Estoque</th><th class="n">Vendido 12m</th><th class="n">Meses</th></tr></thead>
+        <tbody>
+          <tr><td>Filtro de óleo lub. <code>2995655</code></td><td class="n">29</td><td class="n">608</td><td class="n">0,6</td></tr>
+          <tr><td>Filtro combustível <code>500086366</code></td><td class="n">27</td><td class="n">355</td><td class="n">0,9</td></tr>
+          <tr><td>Petronas Nexpro 5W30 1 L</td><td class="n">170</td><td class="n">2.112</td><td class="n">1,0</td></tr>
+          <tr><td>Embreagem <code>5801540568</code></td><td class="n">17</td><td class="n">231</td><td class="n">0,9</td></tr>
+          <tr><td>Filtro blow-by NP <code>500099436</code></td><td class="n">3</td><td class="n">110</td><td class="n">0,3</td></tr>
+          <tr><td>Cartucho filtro secador <code>500090219</code></td><td class="n">16</td><td class="n">232</td><td class="n">0,8</td></tr>
+          <tr><td>Farol dimensional diant. <code>500316959</code></td><td class="n">3</td><td class="n">67</td><td class="n">0,5</td></tr>
+          <tr><td>Óleo Nexpro CI-4 15W40 20 L</td><td class="n">8</td><td class="n">97</td><td class="n">1,0</td></tr>
+        </tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Estoque × vendas de 2026</h2>
+  <div class="grid2">
+    <div class="box">
+      <h3>Quanto do estoque vendeu em 2026</h3>
+      <div class="bars" role="img" aria-label="Estoque por última venda">
+        <div class="bar"><span class="lab">Vendeu em 2026</span><span class="track"><span class="fill" style="width:100%;display:block"></span></span><span class="val">20,41 mi</span></div>
+        <div class="bar"><span class="lab">Só em 2025</span><span class="track"><span class="fill" style="width:14%;display:block"></span></span><span class="val">2,85 mi</span></div>
+        <div class="bar"><span class="lab">Só em 2024</span><span class="track"><span class="fill" style="width:4.2%;display:block"></span></span><span class="val">0,86 mi</span></div>
+        <div class="bar"><span class="lab">Nunca (2024–26)</span><span class="track"><span class="fill" style="width:11.2%;display:block"></span></span><span class="val">2,28 mi</span></div>
+      </div>
+      <p class="cap">Por código, na rede inteira. <strong>R$ 6,0 mi (23%) não venderam nenhuma peça em 2026.</strong> 4.386 códigos nunca venderam no período.</p>
+    </div>
+    <div class="box">
+      <h3>Cobertura dos itens que vendem (ritmo de 2026)</h3>
+      <div class="bars" role="img" aria-label="Estoque por meses de cobertura">
+        <div class="bar"><span class="lab">até 1 mês</span><span class="track"><span class="fill" style="width:2%;display:block"></span></span><span class="val">0,13 mi</span></div>
+        <div class="bar"><span class="lab">1 a 3 meses</span><span class="track"><span class="fill" style="width:38.5%;display:block"></span></span><span class="val">2,55 mi</span></div>
+        <div class="bar"><span class="lab">3 a 6 meses</span><span class="track"><span class="fill" style="width:76.6%;display:block"></span></span><span class="val">5,08 mi</span></div>
+        <div class="bar"><span class="lab">6 a 12 meses</span><span class="track"><span class="fill" style="width:100%;display:block"></span></span><span class="val">6,63 mi</span></div>
+        <div class="bar"><span class="lab">12 a 24 meses</span><span class="track"><span class="fill" style="width:47.5%;display:block"></span></span><span class="val">3,15 mi</span></div>
+        <div class="bar"><span class="lab">mais de 24</span><span class="track"><span class="fill" style="width:43.3%;display:block"></span></span><span class="val">2,87 mi</span></div>
+      </div>
+      <p class="cap">Mesmo entre os itens que vendem, <strong>R$ 6,0 mi têm mais de 1 ano de estoque</strong>.</p>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Vendas de 2026 contra 2025</h3>
+    <div class="tw"><table>
+      <thead><tr><th>Segmento</th><th class="n">2025 (1/jan–14/out)</th><th class="n">2026 (1/jan–14/out)</th><th class="n">Var.</th></tr></thead>
+      <tbody>
+        <tr><td>Clientes</td><td class="n">40,83 mi</td><td class="n">38,10 mi</td><td class="n">−6,7%</td></tr>
+        <tr><td>Garantia Iveco</td><td class="n">13,43 mi</td><td class="n">10,30 mi</td><td class="n">−23,3%</td></tr>
+        <tr><td>Venda interna</td><td class="n">2,48 mi</td><td class="n">1,17 mi</td><td class="n">−52,8%</td></tr>
+        <tr><td>Seguradoras</td><td class="n">1,39 mi</td><td class="n">1,66 mi</td><td class="n">+19,4%</td></tr>
+        <tr><td>Mercado Livre</td><td class="n">1,31 mi</td><td class="n">1,51 mi</td><td class="n">+15,3%</td></tr>
+      </tbody></table></div>
+    <p class="cap">Só março e abril de 2026 superaram o mesmo mês de 2025. A venda caiu, mas o estoque não acompanhou a queda.</p>
+  </div>
+  <div class="grid2">
+    <div class="box">
+      <h3>Vende, mas tem estoque para anos</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Item</th><th class="n">Estoque</th><th class="n">Vendido 2026</th><th class="n">Meses</th><th class="n">Custo</th></tr></thead>
+        <tbody>
+          <tr><td>Válvula freio do motor <code>5802535393</code></td><td class="n">44</td><td class="n">6</td><td class="n">69</td><td class="n">391.794</td></tr>
+          <tr><td>Tutela Truck FE Gear 75W80</td><td class="n">3.551</td><td class="n">671</td><td class="n">50</td><td class="n">155.582</td></tr>
+          <tr><td>Tubo flexível <code>41228154</code></td><td class="n">343</td><td class="n">129</td><td class="n">25</td><td class="n">140.173</td></tr>
+          <tr><td>Actioil A550 100 ml</td><td class="n">6.586</td><td class="n">289</td><td class="n">215</td><td class="n">131.936</td></tr>
+          <tr><td>Catalisador <code>5801983451</code></td><td class="n">8</td><td class="n">1</td><td class="n">76</td><td class="n">88.604</td></tr>
+          <tr><td>Injetor do comb. <code>5801594342</code></td><td class="n">44</td><td class="n">4</td><td class="n">104</td><td class="n">67.333</td></tr>
+          <tr><td>Elem. filtro lub. <code>5801628021</code></td><td class="n">90</td><td class="n">2</td><td class="n">425</td><td class="n">37.671</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="box">
+      <h3>Maiores posições sem venda em 2026</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Item</th><th class="n">Qtde</th><th class="n">Custo</th><th>Última venda</th></tr></thead>
+        <tbody>
+          <tr><td>Bloco motor montado <code>5802423083S</code></td><td class="n">1</td><td class="n">104.148</td><td>dez/2025</td></tr>
+          <tr><td>Catalisador REM BDT <code>001C</code></td><td class="n">1</td><td class="n">75.030</td><td>out/2025</td></tr>
+          <tr><td>Suporte S mola posterior <code>5802713677</code></td><td class="n">17</td><td class="n">73.732</td><td>out/2025</td></tr>
+          <tr><td>Tutela Stargear AX-ED</td><td class="n">1.671</td><td class="n">70.733</td><td>dez/2025</td></tr>
+          <tr><td>Motor básico L.BLK <code>5802423913L</code></td><td class="n">1</td><td class="n">67.914</td><td>ago/2025</td></tr>
+          <tr><td>Bloco motor <code>504388602</code></td><td class="n">2</td><td class="n">62.659</td><td>fev/2024</td></tr>
+          <tr><td>Dispositivo comando <code>500092189</code></td><td class="n">2</td><td class="n">61.162</td><td>ago/2025</td></tr>
+          <tr><td>Jogo anéis pist. STD <code>500086216</code></td><td class="n">11</td><td class="n">59.047</td><td>dez/2024</td></tr>
+        </tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Classificação dos itens "C?"</h2>
+  <p>C? são <strong>6.122 posições (3.979 códigos) que somam R$ 10,09 mi, 38% do estoque</strong>. 95% desse valor teve entrada nos últimos 12 meses: são, em geral, itens que o ERP ainda não classificou. Classifiquei cada posição pelo giro real <strong>na própria filial</strong>, contando em quantos dos últimos 12 meses ela vendeu o item.</p>
+  <div class="box">
+    <div class="tw"><table>
+      <thead><tr><th>Nova classe</th><th>Regra</th><th class="n">Posições</th><th class="n">Custo</th><th class="n">% do C?</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip c-good">A · giro alto</span></td><td>vendeu em 9+ dos 12 meses</td><td class="n">2</td><td class="n">0,00 mi</td><td class="n">0,0%</td></tr>
+        <tr><td><span class="chip c-good">B · giro médio</span></td><td>vendeu em 4 a 8 meses</td><td class="n">716</td><td class="n">1,58 mi</td><td class="n">15,6%</td></tr>
+        <tr><td><span class="chip c-warn">C · giro baixo</span></td><td>vendeu em 1 a 3 meses</td><td class="n">3.579</td><td class="n">5,91 mi</td><td class="n">58,6%</td></tr>
+        <tr><td><span class="chip c-ser">D · gira só em outra filial</span></td><td>não vendeu aqui, vendeu em outra filial</td><td class="n">953</td><td class="n">1,40 mi</td><td class="n">13,8%</td></tr>
+        <tr><td><span class="chip c-crit">E · sem venda</span></td><td>nenhuma venda em 12 meses na rede</td><td class="n">872</td><td class="n">1,20 mi</td><td class="n">11,9%</td></tr>
+      </tbody></table></div>
+    <p class="cap">A mesma régua aplicada às classes do ERP mostra que A1–A3 são de fato giro alto e B1–B3 giro médio/alto. Já C4 tem R$ 3,50 mi sem venda na rede em 12 meses e R$ 2,03 mi que só giram em outra filial. A classificação de cada posição está na planilha que acompanha este relatório.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Estoque obsoleto: a base dos kits</h2>
+  <p>Proposta de classificação de cada posição. As quatro primeiras somam <strong>R$ 9,06 mi</strong> a custo, que valem <strong>R$ 23,2 mi</strong> a preço público.</p>
+  <div class="box">
+    <div class="tw"><table>
+      <thead><tr><th>Situação</th><th>Regra</th><th class="n">Posições</th><th class="n">Custo</th><th class="n">% estoque</th><th class="n">Já vendido a cliente</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip c-crit">Morto</span></td><td>nenhuma venda de jan/2024 a hoje</td><td class="n">5.193</td><td class="n">2,24 mi</td><td class="n">8,5%</td><td class="n">0,01 mi</td></tr>
+        <tr><td><span class="chip c-crit">Parado</span></td><td>vendeu antes, mas nada nos últimos 12 meses</td><td class="n">2.876</td><td class="n">2,50 mi</td><td class="n">9,5%</td><td class="n">1,74 mi</td></tr>
+        <tr><td><span class="chip c-ser">Fora do lugar</span></td><td>não vende nesta filial; vende em outra</td><td class="n">3.394</td><td class="n">3,41 mi</td><td class="n">12,9%</td><td class="n">3,18 mi</td></tr>
+        <tr><td><span class="chip c-warn">Excesso</span></td><td>vende, mas tem mais de 24 meses de estoque</td><td class="n">431</td><td class="n">0,91 mi</td><td class="n">3,5%</td><td class="n">0,79 mi</td></tr>
+        <tr><td><span class="chip c-good">Saudável</span></td><td>demais</td><td class="n">6.367</td><td class="n">17,34 mi</td><td class="n">65,7%</td><td class="n">—</td></tr>
+      </tbody></table></div>
+    <div class="tw"><table>
+      <thead><tr><th>Filial</th><th class="n">Morto</th><th class="n">Parado</th><th class="n">Fora do lugar</th><th class="n">Excesso</th><th class="n">Saudável</th></tr></thead>
+      <tbody>
+        <tr><td>Betim</td><td class="n">1,33</td><td class="n">1,52</td><td class="n">0,49</td><td class="n">0,72</td><td class="n">8,72</td></tr>
+        <tr><td>Pouso Alegre</td><td class="n">0,35</td><td class="n">0,37</td><td class="n">0,60</td><td class="n">0,05</td><td class="n">2,46</td></tr>
+        <tr><td>BH</td><td class="n">0,16</td><td class="n">0,24</td><td class="n">0,77</td><td class="n">0,05</td><td class="n">2,06</td></tr>
+        <tr><td>Montes Claros</td><td class="n">0,26</td><td class="n">0,19</td><td class="n">0,57</td><td class="n">0,04</td><td class="n">1,84</td></tr>
+        <tr><td>Juiz de Fora</td><td class="n">0,12</td><td class="n">0,13</td><td class="n">0,62</td><td class="n">0,04</td><td class="n">1,75</td></tr>
+        <tr><td>Divinópolis</td><td class="n">0,02</td><td class="n">0,06</td><td class="n">0,36</td><td class="n">0,00</td><td class="n">0,51</td></tr>
+      </tbody></table></div>
+    <p class="cap">Valores em R$ mi a custo. "Já vendido a cliente" = parte do valor cujo código algum cliente comum já comprou, ou seja, que tem histórico para montar kit compatível.</p>
+  </div>
+  <div class="q"><p><strong>O que isso significa para os kits:</strong> parado, fora do lugar e excesso (R$ 6,8 mi) têm histórico de venda, e o sistema consegue achar o cliente e o serviço compatíveis. O <strong>estoque morto (R$ 2,24 mi) quase nunca foi vendido a cliente</strong>, então não há histórico para dizer em qual caminhão ele serve. Para esse grupo, os kits dependem do cadastro de aplicação da peça (código × modelo) ou de uma conferência técnica.</p></div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>O que pode ter passado despercebido</h2>
+  <ol class="ins">
+    <li><strong>A compra continua alimentando o problema.</strong> Em 2026 entraram R$ 1,64 mi em posições que já estavam mortas, paradas, fora do lugar ou em excesso. Outros R$ 0,59 mi foram comprados em 2026 de itens sem nenhuma venda na rede em 12 meses. Exemplo: 2 blocos motor <code>504388602</code> (R$ 62,7 mil), comprados em set/2026 sem venda desde fev/2024.</li>
+    <li><strong>R$ 3,41 mi resolvem com transferência, sem desconto.</strong> São itens que não vendem na filial onde estão, mas vendem em outra. BH concentra R$ 0,77 mi. Exemplos: bico injetor <code>504287069</code> parado em JF, enquanto Betim vendeu 111 unidades em 2026; injetores <code>5801906153</code> parados em BH e Divinópolis, que vendem em Betim e JF.</li>
+    <li><strong>A válvula de freio do motor <code>5802535393</code> é a maior posição de excesso:</strong> 44 peças (R$ 392 mil) em 5 filiais, com 6 vendas em 2026, o que dá 69 meses de estoque. Só Betim tem R$ 197 mil.</li>
+    <li><strong>Lubrificantes em excesso:</strong> Actioil A550 com 6.586 frascos (215 meses de venda), Tutela Truck FE Gear com 3.551 L (50 meses) e Tutela Stargear com 1.671 L, sem venda desde dez/2025. São fáceis de girar em kits de revisão, porque servem em muitos clientes.</li>
+    <li><strong>Agregados caros parados:</strong> seis blocos de motor e motores básicos somam cerca de R$ 350 mil sem venda em 2026 (5802423083S, 5802423913L, 504388602, 5802423497S, 5802422288L, 5802423917S). Cada venda dessas libera dezenas de milhares de reais. Vale uma oferta direta às frotas que fazem retífica, como Eber, Cooperativa de Laticínios e SADA.</li>
+    <li><strong>Falta o básico que mais gira:</strong> filtro de óleo <code>2995655</code> (568 notas no ano, 29 em estoque), filtro de combustível <code>500086366</code> e embreagem <code>5801540568</code> estão com menos de 1 mês de estoque. Os limpadores Tunap (271 e 126 notas em 2026) e o disco de freio traseiro <code>OF503120811</code> (119 notas, 96 clientes) estão zerados. É venda perdida enquanto há R$ 9 mi parados.</li>
+    <li><strong>O "Tempo" do ERP esconde a idade real.</strong> Ele conta da última entrada: R$ 1,31 mi parados aparecem como "até 12 meses". Para medir obsolescência, use a última venda.</li>
+    <li><strong>As classes do ERP não ajudam no fundo da curva.</strong> C4 e C? somam R$ 16,5 mi (62% do estoque) e misturam itens de giro médio com itens mortos. A reclassificação da seção 04 separa o que é oportunidade do que é problema.</li>
+    <li><strong>A venda caiu e o estoque não caiu junto.</strong> O faturamento de jan–set caiu 10,5% (garantia −23%, venda interna −53%), mas o estoque segue em 6,5 meses de cobertura. As exceções são seguradoras (+19%) e Mercado Livre (+15%), canais que vale usar para escoar estoque.</li>
+    <li><strong>O grupo "MERCADO LIVRE" do ERP tem R$ 2,53 mi</strong>, mas são injetores, bombas de alta pressão e embreagens que vendem bem em todos os canais. Vale confirmar se esse grupo indica itens anunciados no ML ou se é um cadastro a corrigir.</li>
+    <li><strong>Higiene de cadastro:</strong> 15 posições têm custo zero e 1.827 não têm data de movimentação. Ambos distorcem qualquer cálculo de giro e de margem.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Próximos passos propostos</h2>
+  <ul>
+    <li><strong>Transferir antes de descontar:</strong> lista de posições "fora do lugar" com a filial de destino (R$ 3,41 mi).</li>
+    <li><strong>Kits com o obsoleto:</strong> o sistema passa a montar os kits a partir dos itens parados e em excesso, levando cada item ao cliente que compra a peça compatível, com desconto calibrado pela margem disponível.</li>
+    <li><strong>Agregados:</strong> oferta direta dos blocos e motores parados às frotas que retificam.</li>
+    <li><strong>Compras:</strong> bloquear ou alertar a reposição de itens já classificados como morto, parado ou excesso.</li>
+    <li><strong>Ruptura:</strong> repor os itens de giro alto zerados ou com menos de 1 mês de estoque.</li>
+  </ul>
+</section>
+</main>
+</body></html>
